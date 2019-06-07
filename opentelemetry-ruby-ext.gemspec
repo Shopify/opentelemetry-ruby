@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = 'C extensions for opentelemetry client library'
   spec.homepage      = 'https://opentelemetry.com'
-  spec.license       = 'MIT'
+  spec.license       = 'Apache'
 
   spec.files         = Dir['ext/**/*.{h,c,cc}']
   spec.require_paths = ['lib']

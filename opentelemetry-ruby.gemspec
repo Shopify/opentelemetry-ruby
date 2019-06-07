@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = 'OpenTelemetry client library'
   spec.homepage      = 'https://opentelemetry.com'
-  spec.license       = 'MIT'
+  spec.license       = 'Apache'
 
   spec.files         = Dir.chdir(File.expand_path('..', __dir__)) do
     `git ls-files -z`.split("\x0").reject do |f|
