@@ -7,11 +7,11 @@ require 'opentelemetry/version'
 Gem::Specification.new do |spec|
   spec.name          = 'opentelemetry-ruby'
   spec.version       = OpenTelemetry::VERSION
-  spec.authors       = ['Ian Quick', 'Francis Bogsyani']
+  spec.authors       = ['Ian Quick', 'Francis Bogsanyi']
   spec.email         = ['ian.quick@shopify.com']
 
   spec.summary       = 'OpenTelemetry client library'
-  spec.homepage      = 'https://opentelemetry.com'
+  spec.homepage      = 'https://opentelemetry.io'
   spec.license       = 'Apache'
 
   spec.files         = Dir.chdir(File.expand_path('.', __dir__)) do
