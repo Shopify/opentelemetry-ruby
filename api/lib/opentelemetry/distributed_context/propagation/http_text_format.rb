@@ -17,7 +17,21 @@ module OpenTelemetry
       # Propagation is usually implemented via library-specific request interceptors, where the client-side injects values
       # and the server-side extracts them.
       class HTTPTextFormat
-        # TODO
+        def extract(carrier, getter)
+          tp = TraceParent.new(getter.get(carrier, TraceParent::TRACE_PARENT_HEADER))
+
+          SpanContext.new(trace_id: tp.trace_id, span_id: tp.span_id)
+        rescue
+          SpanContext.new
+        end
+
+        def inject(context, carrier, setter)
+          setter.set(carrier, TraceParent::TRACE_PARENT_HEADER,  TraceParent.from_context(context).to_s)
+        end
+
+        def fields
+          [TraceParent::TRACE_PARENT_HEADER]
+        end
       end
     end
   end
