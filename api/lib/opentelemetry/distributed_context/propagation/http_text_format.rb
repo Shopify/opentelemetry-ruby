@@ -28,7 +28,8 @@ module OpenTelemetry
           tp = TraceParent.from_string(header)
 
           SpanContext.new(trace_id: tp.trace_id, span_id: tp.span_id, flags: tp.flags)
-        rescue OpenTelemetry::Error
+        rescue OpenTelemetry::Error => e
+          OpenTelemetry.logger.warn("error in extracting trace parent: #{e}")
           SpanContext.new
         end
 
