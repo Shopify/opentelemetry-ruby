@@ -254,6 +254,16 @@ describe OpenTelemetry::Context do
 
       _(Context.current).must_equal(Context::ROOT)
     end
+
+    it 'does not modify the underlying stack' do
+      Context.attach(new_context)
+      stack = Context.send(:stack)
+
+      Context.clear
+
+      _(stack).must_equal([new_context])
+      _(Context.current).must_equal(Context::ROOT)
+    end
   end
 
   describe '#value' do
