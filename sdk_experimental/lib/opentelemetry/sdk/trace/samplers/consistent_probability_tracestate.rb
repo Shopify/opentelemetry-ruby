@@ -13,9 +13,8 @@ module OpenTelemetry
         # The ConsistentProbabilityTraceState module implements Tracestate parsing,
         # validation and manipulation for the consistent probability-based samplers.
         module ConsistentProbabilityTraceState
-          DECIMAL = /\A\d+\z/
           MAX_LIST_LENGTH = 256 # Defined by https://www.w3.org/TR/trace-context/
-          private_constant(:DECIMAL, :MAX_LIST_LENGTH)
+          private_constant(:MAX_LIST_LENGTH)
 
           private
 
@@ -61,19 +60,79 @@ module OpenTelemetry
             return yield(nil, nil, nil) if ot.nil? || ot.length > MAX_LIST_LENGTH # TODO: warn that we're rejecting the tracestate
 
             p = r = nil
-            rest = +''
-            ot.split(';').each do |field|
-              k, v = field.split(':', 2)
-              # TODO: "the used keys MUST be unique." - do we need to validate this?
-              case k
-              when 'p' then p = decimal(v)
-              when 'r' then r = decimal(v)
+            rest = nil
+          
+            i   = 0
+            len = ot.length
+          
+            while i < len
+              # Find the end of the current field (either `;` or end of string)
+              j = ot.index(';', i) || len
+          
+              # Field boundaries are now [i, j)
+              field_len = j - i
+          
+              if field_len >= 2 && ot.getbyte(i + 1) == 58 # 58 == ':'
+                key_byte = ot.getbyte(i)
+                val_start = i + 2
+          
+                # Fast-path only if key is 'p' or 'r'
+                if (key_byte == 112 || key_byte == 114) # 'p' or 'r'
+                  num = 0
+                  k   = val_start
+                  valid = false
+                  while k < j
+                    byte = ot.getbyte(k)
+                    if byte >= 48 && byte <= 57 # '0'..'9'
+                      num = num * 10 + (byte - 48)
+                      valid = true
+                      k += 1
+                    else
+                      valid = false
+                      break
+                    end
+                  end
+          
+                  if valid
+                    if key_byte == 112 # 'p'
+                      p = num
+                    else # 'r'
+                      r = num
+                    end
+                  else
+                    # Not a valid decimal value, treat as generic field
+                    if rest
+                      rest << ';'
+                      rest << ot[i, field_len]
+                    else
+                      rest = ot[i, field_len].dup
+                    end
+                  end
+                else
+                  # Unknown key, copy to rest
+                  if rest
+                    rest << ';'
+                    rest << ot[i, field_len]
+                  else
+                    rest = ot[i, field_len].dup
+                  end
+                end
               else
-                rest << ';' unless rest.empty?
-                rest << field
+                # No colon or too short to be key:value, copy to rest
+                if rest
+                  rest << ';'
+                  rest << ot[i, field_len]
+                else
+                  rest = ot[i, field_len].dup
+                end
               end
+          
+              i = j + 1 # Move past the semicolon (or to len, which is fine)
             end
-            rest = nil if rest.empty?
+          
+            # Align semantics with the original parse: return nil if no extra fields.
+            rest = nil if rest&.empty?
+
             yield(p, r, rest)
           end
 
@@ -99,10 +158,6 @@ module OpenTelemetry
 
           def invariant(p, r, sampled)
             ((p <= r) == sampled) || (sampled && (p == 63))
-          end
-
-          def decimal(str)
-            str.to_i if !str.nil? && DECIMAL.match?(str)
           end
 
           def generate_r(trace_id)
